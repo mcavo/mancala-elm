@@ -1,0 +1,12 @@
+# elm-package generated files
+elm-stuff/
+
+# elm-repl generated files
+repl-temp-*
+
+# Mac
+*/.DS_Store
+.DS_Store
+
+# Temporal files
+*~
