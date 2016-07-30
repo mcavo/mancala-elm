@@ -10,3 +10,6 @@ repl-temp-*
 
 # Temporal files
 *~
+
+# Node modules
+node_modules/
