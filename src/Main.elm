@@ -7,6 +7,12 @@ import Html.App
 
 -- STYLE
 
+size : Int
+size = 6
+
+value : Int
+value = 4
+
 boxWidth : Int
 boxWidth = 130 
 
@@ -68,14 +74,14 @@ type alias Board =
     , p2List : List Int
     } 
 
-initBoard : Int -> Int -> Board
-initBoard size value=
+initBoard : Board
+initBoard =
     { p1Points = 0
     , p2Points = 0
     , p1List =
-        List.map (\n -> n) [1..size]
+        List.map (\n -> value) [1..size]
     , p2List =
-        List.map (\n -> n) [1..size]
+        List.map (\n -> value) [1..size]
     }
 
 type alias Model =
@@ -87,7 +93,7 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( {status=Menu, board=initBoard 6 4}, Cmd.none )
+    ( {status=Menu, board=initBoard}, Cmd.none )
 
 
 
@@ -99,19 +105,19 @@ type Msg
 
 getPlayer1Row : Model ->  List (Html Msg)
 getPlayer1Row model = List.map 
-    (\n -> 
+    (\(n,m) -> 
         div [ class "col-md-2", smallBoxStyle, player1Style, pxnull]
             [ text (toString(n)) ]
     ) 
-    (List.reverse(model.board.p1List))
+    (List.map2 (,) (List.reverse(model.board.p1List)) (List.reverse(List.map (\n -> n) [0..(size-1)])))
 
 getPlayer2Row : Model ->  List (Html Msg)
 getPlayer2Row model = List.map 
-    (\n -> 
+    (\(n,m) -> 
         div [ class "col-md-2", smallBoxStyle, player2Style, pxnull]
             [ text (toString(n)) ]
     ) 
-    model.board.p2List
+    (List.map2 (,) model.board.p2List (List.map (\n -> n) [0..(size-1)]))
 
 
 
