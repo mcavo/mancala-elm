@@ -30,8 +30,8 @@ boardSize = 14
 value : Int
 value = 4
 
-boxWidth : Int
-boxWidth = 130 
+boxHeight : Int
+boxHeight = 130 
 
 menuBoxStyle : Attribute Msg
 menuBoxStyle = style 
@@ -50,16 +50,24 @@ borderStyle = style
 
 bigBoxStyle : Attribute Msg
 bigBoxStyle = style
-    [ ("height", toString(2 * boxWidth) ++ "px")
+    [ ("height", toString(2 * boxHeight) ++ "px")
+    , ("line-height", "240px")
     , ("color", "#ffffff")
     , ("border", "5px solid #ffffff")
     , ("padding-left", "0px")
     , ("padding-right", "0px")
     ]
 
+verticalStyle : Attribute Msg
+verticalStyle = style
+    [ ("vertical-align", "middle")
+    , ("display", "inline-block")
+    ]
+
 smallBoxStyle : Attribute Msg
 smallBoxStyle = style
-    [ ("height", toString(boxWidth) ++ "px")
+    [ ("height", toString(boxHeight) ++ "px")
+    , ("line-height", "110px")
     , ("color", "#ffffff")
     , ("border", "5px solid #ffffff")
     ]
@@ -121,14 +129,14 @@ getPlayer2Row model =
         List.map 
             (\(n,m) -> 
                 div [ class "col-md-2", smallBoxStyle, player2Style, pxnull, onClick( Move m )]
-                    [ text (toString(n)) ]
+                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
             ) 
             (List.map2 (,) (List.reverse(getSubList (size+1) (boardSize-1) model.board.list )) (List.reverse(List.map (\n -> n) [(size+1)..(boardSize-2)])))
     else
         List.map 
             (\n -> 
                 div [ class "col-md-2", smallBoxStyle, player2Style, pxnull]
-                    [ text (toString(n)) ]
+                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
             ) 
             (List.reverse(getSubList (size+1) (boardSize-1) model.board.list ))
 
@@ -139,14 +147,14 @@ getPlayer1Row model =
         List.map 
             (\(n,m) -> 
                 div [ class "col-md-2", smallBoxStyle, player1Style, pxnull, onClick( Move m )]
-                    [ text (toString(n)) ]
+                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
             ) 
             (List.map2 (,) (getSubList 0 (size) model.board.list) (List.map (\n -> n) [0..(size-1)]))
     else
         List.map 
             (\n -> 
                 div [ class "col-md-2", smallBoxStyle, player1Style, pxnull]
-                    [ text (toString(n)) ]
+                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
             ) 
             (getSubList 0 (size) model.board.list)
 
@@ -164,10 +172,10 @@ getMenuView model =
 getPlayingView : Model -> Html Msg
 getPlayingView model = 
     div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ text (toString(getSeeds (boardSize-1) model.board.list)) ] ]
+        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(getSeeds (boardSize-1) model.board.list)) ]]]
         , div [ class "col-md-6", pxnull]
               ((getPlayer2Row model) ++ (getPlayer1Row model))
-        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ text (toString(getSeeds size model.board.list)) ] ]
+        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getSeeds size model.board.list)) ]]]
         ]
 
 
