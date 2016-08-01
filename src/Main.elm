@@ -5,10 +5,25 @@ import Html.Attributes exposing (class,style)
 import Html.Events exposing (onClick)
 import Html.App
 
+-- API
+
+getSubListFromIndex : Int -> List a -> List a
+getSubListFromIndex el list = 
+    case (el, list) of
+        (0, list) ->
+            list
+        (x, []) ->
+            []
+        (x, head::list) ->
+            getSubListFromIndex (x-1) list
+
 -- STYLE
 
 size : Int
 size = 6
+
+boardSize : Int
+boardSize = 14
 
 value : Int
 value = 4
@@ -101,23 +116,23 @@ init =
 
 
 type Msg
-    = NoOp | Start
+    = NoOp | Start | MoveP1 Int | MoveP2 Int
 
 getPlayer1Row : Model ->  List (Html Msg)
 getPlayer1Row model = List.map 
     (\(n,m) -> 
-        div [ class "col-md-2", smallBoxStyle, player1Style, pxnull]
-            [ text (toString(n)) ]
+        div [ class "col-md-2", smallBoxStyle, player1Style, pxnull, onClick( MoveP2 m )]
+            [ text (toString(n) ++ " " ++ toString(m)) ]
     ) 
-    (List.map2 (,) (List.reverse(model.board.p1List)) (List.reverse(List.map (\n -> n) [0..(size-1)])))
+    (List.map2 (,) (List.reverse(model.board.p2List)) (List.reverse(List.map (\n -> n) [0..(size-1)])))
 
 getPlayer2Row : Model ->  List (Html Msg)
 getPlayer2Row model = List.map 
     (\(n,m) -> 
-        div [ class "col-md-2", smallBoxStyle, player2Style, pxnull]
-            [ text (toString(n)) ]
+        div [ class "col-md-2", smallBoxStyle, player2Style, pxnull, onClick( MoveP1 m )]
+            [ text (toString(n) ++ " " ++ toString(m)) ]
     ) 
-    (List.map2 (,) model.board.p2List (List.map (\n -> n) [0..(size-1)]))
+    (List.map2 (,) model.board.p1List (List.map (\n -> n) [0..(size-1)]))
 
 
 
@@ -135,10 +150,10 @@ getMenuView model =
 getPlayingView : Model -> Html Msg
 getPlayingView model = 
     div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player1Style][ text (toString(model.board.p1Points)) ] ]
+        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player1Style][ text (toString(model.board.p2Points)) ] ]
         , div [ class "col-md-6", pxnull]
               ((getPlayer1Row model) ++ (getPlayer2Row model))
-        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player2Style ][ text (toString(model.board.p2Points)) ] ]
+        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player2Style ][ text (toString(model.board.p1Points)) ] ]
         ]
 
 
@@ -155,6 +170,61 @@ view model =
 
 -- UPDATE
 
+updateRow : Board -> List Int -> List Int -> Int -> Int -> List Int
+updateRow board list positions position seeds = List.map 
+    (\(n,m) -> 
+        if m /= position
+        then
+            (n + (seeds // ((size+1)*2)) + (addOneMoreSeed ((m - 1 - position) % boardSize) seeds))
+        else
+            ((seeds // ((size+1)*2)) + (addOneMoreSeed ((m - 1 - position) % boardSize) seeds)))
+    (List.map2 (,) list (List.map (\n -> n) positions))
+
+addOneMoreSeed : Int -> Int -> Int
+addOneMoreSeed position seeds =
+    if (position < (seeds % (2*(size+1))))
+    then 1
+    else 0
+
+updateBoard : Board -> Int -> Int -> Board
+updateBoard board position seeds =
+    { p1Points 
+        = board.p1Points 
+        + (seeds // boardSize) 
+        + (addOneMoreSeed ((size - 1 - position) % boardSize) seeds) 
+    , p2Points
+        = board.p2Points
+        + (seeds // boardSize)
+        + (addOneMoreSeed ((boardSize - 2 - position) % boardSize) seeds)
+    , p1List = 
+        updateRow board board.p1List [0..(size-1)] position seeds
+    , p2List =
+        updateRow board board.p2List [(size+1)..(boardSize - 2)] position seeds
+    }
+
+updateModel : Model -> Int -> Int -> Model
+updateModel model position seeds = 
+    {model | board=(updateBoard model.board position seeds)}
+
+getSeeds : Int -> List Int -> Int
+getSeeds x list =
+    case (x, list) of
+        (_, []) ->
+            -1
+        (0, head::tail) ->
+            head
+        (x, head::tail) ->
+            getSeeds (x-1) tail
+
+
+--capture : Board -> position -> seeds ->
+--capture b position seeds =
+--    if getSeedsBoard b (getOpposite (position+seeds)) == 0 
+--    && getSeedsBoard b (position+seeds) == 1 
+--    && diffBoardSides (getOpposite (position+seeds)) (position+seeds)
+--    -- Agregar algo respecto al turno
+--    then removtSeedsBoard b (getOpposite (position+seeds)) (position+seeds)
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -163,7 +233,10 @@ update msg model =
             ( {model | status=Menu}, Cmd.none )
         Start ->
             ( {model | status=Playing}, Cmd.none )
-
+        MoveP1 position ->
+            ( (updateModel model position (getSeeds position model.board.p1List)), Cmd.none )
+        MoveP2 position ->
+            ( (updateModel model (position + size + 1) (getSeeds position model.board.p2List)), Cmd.none )
 
 
 -- SUBSCRIPTIONS
