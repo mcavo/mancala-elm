@@ -244,11 +244,17 @@ getSeeds x list =
 --    -- Agregar algo respecto al turno
 --    then removtSeedsBoard b (getOpposite (position+seeds)) (position+seeds)
 
-updateTurn : Turn -> Turn
-updateTurn turn = 
+updateTurn : Turn -> Int -> Int -> Turn 
+updateTurn turn position seeds = 
     case turn of
-        Player1 -> Player2
-        Player2 -> Player1
+        Player1 -> 
+            if ((position+seeds)%boardSize) == size
+            then Player1
+            else Player2
+        Player2 -> 
+            if ((position+seeds)%boardSize) == (boardSize-1)
+            then Player2
+            else Player1
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -259,10 +265,10 @@ update msg model =
             ( {model | status=Playing}, Cmd.none )
         MoveP1 position ->
             ( (updateModel model position (getSeeds position model.board.p1List)), Cmd.none )
-            |> (\(n,m) -> ({n | turn=updateTurn model.turn}, m))
+            |> (\(n,m) -> ({n | turn=(updateTurn model.turn position (getSeeds position model.board.p1List))}, m))
         MoveP2 position ->
             ( (updateModel model (position + size + 1) (getSeeds position model.board.p2List)), Cmd.none )
-            |> (\(n,m) -> ({n | turn=updateTurn model.turn}, m))
+            |> (\(n,m) -> ({n | turn=(updateTurn model.turn (position + size + 1) (getSeeds position model.board.p2List))}, m))
 
 
 -- SUBSCRIPTIONS
