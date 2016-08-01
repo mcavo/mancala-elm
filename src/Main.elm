@@ -102,13 +102,13 @@ initBoard =
 type alias Model =
     { status : Status
     , board : Board
---  turn : Turn,
+    , turn : Turn
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {status=Menu, board=initBoard}, Cmd.none )
+    ( {status=Menu, board=initBoard, turn=Player1}, Cmd.none )
 
 
 
@@ -118,22 +118,41 @@ init =
 type Msg
     = NoOp | Start | MoveP1 Int | MoveP2 Int
 
-getPlayer1Row : Model ->  List (Html Msg)
-getPlayer1Row model = List.map 
-    (\(n,m) -> 
-        div [ class "col-md-2", smallBoxStyle, player1Style, pxnull, onClick( MoveP2 m )]
-            [ text (toString(n) ++ " " ++ toString(m)) ]
-    ) 
-    (List.map2 (,) (List.reverse(model.board.p2List)) (List.reverse(List.map (\n -> n) [0..(size-1)])))
-
 getPlayer2Row : Model ->  List (Html Msg)
-getPlayer2Row model = List.map 
-    (\(n,m) -> 
-        div [ class "col-md-2", smallBoxStyle, player2Style, pxnull, onClick( MoveP1 m )]
-            [ text (toString(n) ++ " " ++ toString(m)) ]
-    ) 
-    (List.map2 (,) model.board.p1List (List.map (\n -> n) [0..(size-1)]))
+getPlayer2Row model = 
+    if model.turn == Player2
+    then
+        List.map 
+            (\(n,m) -> 
+                div [ class "col-md-2", smallBoxStyle, player2Style, pxnull, onClick( MoveP2 m )]
+                    [ text (toString(n)) ]
+            ) 
+            (List.map2 (,) (List.reverse(model.board.p2List)) (List.reverse(List.map (\n -> n) [0..(size-1)])))
+    else
+        List.map 
+            (\n -> 
+                div [ class "col-md-2", smallBoxStyle, player2Style, pxnull]
+                    [ text (toString(n)) ]
+            ) 
+            (List.reverse(model.board.p2List))
 
+getPlayer1Row : Model ->  List (Html Msg)
+getPlayer1Row model = 
+    if model.turn == Player1
+    then
+        List.map 
+            (\(n,m) -> 
+                div [ class "col-md-2", smallBoxStyle, player1Style, pxnull, onClick( MoveP1 m )]
+                    [ text (toString(n)) ]
+            ) 
+            (List.map2 (,) model.board.p1List (List.map (\n -> n) [0..(size-1)]))
+    else
+        List.map 
+            (\n -> 
+                div [ class "col-md-2", smallBoxStyle, player1Style, pxnull]
+                    [ text (toString(n)) ]
+            ) 
+            model.board.p1List
 
 
 getMenuView : Model -> Html Msg
@@ -150,10 +169,10 @@ getMenuView model =
 getPlayingView : Model -> Html Msg
 getPlayingView model = 
     div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player1Style][ text (toString(model.board.p2Points)) ] ]
+        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ text (toString(model.board.p2Points)) ] ]
         , div [ class "col-md-6", pxnull]
-              ((getPlayer1Row model) ++ (getPlayer2Row model))
-        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player2Style ][ text (toString(model.board.p1Points)) ] ]
+              ((getPlayer2Row model) ++ (getPlayer1Row model))
+        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ text (toString(model.board.p1Points)) ] ]
         ]
 
 
@@ -225,6 +244,11 @@ getSeeds x list =
 --    -- Agregar algo respecto al turno
 --    then removtSeedsBoard b (getOpposite (position+seeds)) (position+seeds)
 
+updateTurn : Turn -> Turn
+updateTurn turn = 
+    case turn of
+        Player1 -> Player2
+        Player2 -> Player1
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -235,8 +259,10 @@ update msg model =
             ( {model | status=Playing}, Cmd.none )
         MoveP1 position ->
             ( (updateModel model position (getSeeds position model.board.p1List)), Cmd.none )
+            |> (\(n,m) -> ({n | turn=updateTurn model.turn}, m))
         MoveP2 position ->
             ( (updateModel model (position + size + 1) (getSeeds position model.board.p2List)), Cmd.none )
+            |> (\(n,m) -> ({n | turn=updateTurn model.turn}, m))
 
 
 -- SUBSCRIPTIONS
