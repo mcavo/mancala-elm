@@ -192,11 +192,78 @@ view model =
 
 -- UPDATE
 
+diffBoardSides : Int -> Int -> Bool
+diffBoardSides i1 i2 =
+    if ((i1<size && i2<size)
+    || (i1>size && i1<(boardSize-1) && i2>size && i2<(boardSize-1)))
+    then
+        False
+    else
+        True
+
+getOpposite : Int -> Int
+getOpposite hole =
+    if hole <= size
+    then
+        getSeeds hole (List.reverse(List.map (\n -> n) (13::[(size+1)..(boardSize-2)])))
+    else
+        getSeeds (hole-size-1) (List.reverse(List.map (\n -> n) (6::[0..(size-1)])))
+
+getSeeds : Int -> List Int -> Int
+getSeeds x list =
+    case (x, list) of
+        (_, []) ->
+            -1
+        (0, head::tail) ->
+            head
+        (x, head::tail) ->
+            getSeeds (x-1) tail
+
+getPlayerHole : Turn -> Int
+getPlayerHole turn =
+    case turn of
+        Player1 -> size
+        Player2 -> boardSize-1
+
 addOneMoreSeed : Int -> Int -> Int
 addOneMoreSeed position seeds =
     if (position < (seeds % (2*(size+1))))
     then 1
     else 0
+
+addSeedsFromHole : List Int -> Int -> Int -> List Int
+addSeedsFromHole list seeds hole =
+    case (list, seeds, hole) of
+        ([],_,_) -> []
+        (head::tail, seeds, 0) -> (head+seeds)::tail
+        (head::tail, seeds, x) -> head::(addSeedsFromHole tail seeds (x-1))
+
+removeSeedsFromHole : List Int -> Int -> List Int
+removeSeedsFromHole list index =
+    case (list, index) of
+        ([], _) -> []
+        (head::tail, 0) -> 0::tail
+        (head::tail, x) -> head::(removeSeedsFromHole tail (x-1))
+
+capture : Board -> Int -> Int -> Int -> Board
+capture board hole1 hole2 playerHole =
+    (board)
+    |> (\n -> {n | list = (addSeedsFromHole n.list (getSeeds hole1 n.list) playerHole)})
+    |> (\n -> {n | list = (addSeedsFromHole n.list (getSeeds hole2 n.list) playerHole)})
+    |> (\n -> {n | list = (removeSeedsFromHole n.list hole1)})
+    |> (\n -> {n | list = (removeSeedsFromHole n.list hole2)})
+
+checkCapture : Model -> Int -> Int -> Model
+checkCapture model position seeds =
+    if (((position+seeds)%boardSize) /= size)
+    && (((position+seeds)%boardSize) /= (boardSize-1))
+    && ((getSeeds ((position+seeds)%boardSize) model.board.list) == 1) -- This hole was empty
+    && ((getSeeds (getOpposite((position+seeds)%boardSize)) model.board.list) /= 0)
+    && not (diffBoardSides position ((position+seeds)%boardSize))
+    then 
+        { model | board=(capture model.board ((position+seeds)%boardSize) (getOpposite ((position+seeds)%14)) (getPlayerHole model.turn))}
+    else
+        model
 
 updateList : Board -> Int -> Int -> List Int
 updateList board position seeds =
@@ -218,26 +285,8 @@ updateBoard board position seeds =
 
 updateModel : Model -> Int -> Int -> Model
 updateModel model position seeds = 
-    {model | board=(updateBoard model.board position seeds)}
-
-getSeeds : Int -> List Int -> Int
-getSeeds x list =
-    case (x, list) of
-        (_, []) ->
-            -1
-        (0, head::tail) ->
-            head
-        (x, head::tail) ->
-            getSeeds (x-1) tail
-
-
---capture : Board -> position -> seeds ->
---capture b position seeds =
---    if getSeedsBoard b (getOpposite (position+seeds)) == 0 
---    && getSeedsBoard b (position+seeds) == 1 
---    && diffBoardSides (getOpposite (position+seeds)) (position+seeds)
---    -- Agregar algo respecto al turno
---    then removtSeedsBoard b (getOpposite (position+seeds)) (position+seeds)
+    ({model | board=(updateBoard model.board position seeds)})
+    |> (\n -> (checkCapture n position seeds))
 
 updateTurn : Turn -> Int -> Int -> Turn 
 updateTurn turn position seeds = 
