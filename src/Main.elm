@@ -293,10 +293,12 @@ updateTurn turn position seeds =
     case turn of
         Player1 -> 
             if ((position+seeds)%boardSize) == size
+            || seeds == 0
             then Player1
             else Player2
         Player2 -> 
             if ((position+seeds)%boardSize) == (boardSize-1)
+            || seeds == 0
             then Player2
             else Player1
 
