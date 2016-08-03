@@ -90,7 +90,7 @@ pxnull = style
 
 type Turn = Player1 | Player2
 
-type Status = Menu | Playing
+type Status = Menu | Playing | EndGame
 
 type alias Board = 
     { list : List Int
@@ -122,9 +122,18 @@ init =
 type Msg
     = NoOp | Start | Move Int
 
+getEndGameText : Board -> String
+getEndGameText board = 
+    if (getSeeds size board.list) == (getSeeds (boardSize-1) board.list)
+    then "Its a tie!"
+    else if (getSeeds size board.list) < (getSeeds (boardSize-1) board.list)
+    then "Player2 wins!"
+    else "Player1 wins!"
+
 getPlayer2Row : Model ->  List (Html Msg)
 getPlayer2Row model = 
     if model.turn == Player2
+    && model.status /= EndGame
     then
         List.map 
             (\(n,m) -> 
@@ -143,6 +152,7 @@ getPlayer2Row model =
 getPlayer1Row : Model ->  List (Html Msg)
 getPlayer1Row model = 
     if model.turn == Player1
+    && model.status /= EndGame
     then
         List.map 
             (\(n,m) -> 
@@ -178,6 +188,18 @@ getPlayingView model =
         , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getSeeds size model.board.list)) ]]]
         ]
 
+getEndGameView : Model -> Html Msg 
+getEndGameView model = 
+    div []
+        [ div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
+              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(getSeeds (boardSize-1) model.board.list)) ]]]
+              , div [ class "col-md-6", pxnull]
+                    ((getPlayer2Row model) ++ (getPlayer1Row model))
+              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getSeeds size model.board.list)) ]]]
+              ]
+        , div [ class "row text-center", style [ ("padding", "50px 15px 0") ] ]
+              [ h2 [] [ text ( getEndGameText model.board ) ]]
+        ] 
 
 -- VIEW
 
@@ -188,6 +210,8 @@ view model =
             getMenuView model
         Playing ->
             getPlayingView model
+        EndGame ->
+            getEndGameView model
 
 
 -- UPDATE
@@ -231,12 +255,20 @@ addOneMoreSeed position seeds =
     then 1
     else 0
 
-addSeedsFromHole : List Int -> Int -> Int -> List Int
-addSeedsFromHole list seeds hole =
+checkEmptyList : Int -> Int -> List Int -> Bool
+checkEmptyList io ie list =
+    case (io, ie, list) of
+        (_, _, []) -> True
+        (_, 0, head::tail) -> True
+        (0, y, head::tail) -> if head /= 0 then False else checkEmptyList 0 (y-1) tail
+        (x, y, head::tail) -> checkEmptyList (x-1) (y-1) tail
+
+addSeedsToHole : List Int -> Int -> Int -> List Int
+addSeedsToHole list seeds hole =
     case (list, seeds, hole) of
         ([],_,_) -> []
         (head::tail, seeds, 0) -> (head+seeds)::tail
-        (head::tail, seeds, x) -> head::(addSeedsFromHole tail seeds (x-1))
+        (head::tail, seeds, x) -> head::(addSeedsToHole tail seeds (x-1))
 
 removeSeedsFromHole : List Int -> Int -> List Int
 removeSeedsFromHole list index =
@@ -248,8 +280,8 @@ removeSeedsFromHole list index =
 capture : Board -> Int -> Int -> Int -> Board
 capture board hole1 hole2 playerHole =
     (board)
-    |> (\n -> {n | list = (addSeedsFromHole n.list (getSeeds hole1 n.list) playerHole)})
-    |> (\n -> {n | list = (addSeedsFromHole n.list (getSeeds hole2 n.list) playerHole)})
+    |> (\n -> {n | list = (addSeedsToHole n.list (getSeeds hole1 n.list) playerHole)})
+    |> (\n -> {n | list = (addSeedsToHole n.list (getSeeds hole2 n.list) playerHole)})
     |> (\n -> {n | list = (removeSeedsFromHole n.list hole1)})
     |> (\n -> {n | list = (removeSeedsFromHole n.list hole2)})
 
@@ -302,6 +334,46 @@ updateTurn turn position seeds =
             then Player2
             else Player1
 
+updateStatus : Board -> Status
+updateStatus board =
+    if (checkEmptyList 0 size board.list)
+    && (checkEmptyList (size+1) (boardSize-1) board.list)
+    then
+        EndGame
+    else
+        Playing
+
+clearBoard : List Int -> Int -> Int -> List Int
+clearBoard list io ie =
+    case (list, io, ie) of
+        ([], _, _) -> []
+        (list, _, 0) -> list
+        (head::tail, 0, y) -> (0 :: clearBoard tail 0 (y-1))
+        (head::tail, x, y) -> (head :: clearBoard tail (x-1) (y-1))
+
+checkNoMoves : Turn -> List Int -> List Int
+checkNoMoves turn list =
+    case turn of
+        Player1 -> 
+            if checkEmptyList 0 size list
+            then 
+                (addSeedsToHole list (List.sum (getSubList (size+1) (boardSize-1) list)) (boardSize-1) )
+                |> (\n -> clearBoard n (size+1) (boardSize-1))
+            else
+                list
+        Player2 -> 
+            if checkEmptyList (size+1) (boardSize-1) list
+            then 
+                (addSeedsToHole list (List.sum (getSubList 0 size list)) size )
+                |> (\n -> clearBoard n 0 size)
+            else
+                list
+
+checkNoMovesBoard : Turn -> Board -> Board
+checkNoMovesBoard turn board =
+    {board | list = checkNoMoves turn board.list}
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -311,7 +383,9 @@ update msg model =
             ( {model | status=Playing}, Cmd.none )
         Move position ->
             ( (updateModel model position (getSeeds position model.board.list)), Cmd.none )
-            |> (\(n,m) -> ({n | turn=(updateTurn model.turn position (getSeeds position model.board.list))}, m))
+            |> (\(n,m) -> ({n | turn=(updateTurn n.turn position (getSeeds position model.board.list))}, m))
+            |> (\(n,m) -> ({n | board=(checkNoMovesBoard n.turn n.board)}, m))
+            |> (\(n,m) -> ({n | status=(updateStatus n.board)}, m))
 
 
 -- SUBSCRIPTIONS
@@ -320,7 +394,6 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
-
 
 
 -- MAIN
