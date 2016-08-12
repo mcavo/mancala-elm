@@ -5,6 +5,9 @@ import Html.Attributes exposing (class,style)
 import Html.Events exposing (onClick)
 import Html.App
 
+-- TODO: undo
+-- TODO: ai
+
 -- API
 -- Returns a sublist from io inclusive to ie exclusive
 getSubList : Int -> Int -> List a -> List a
@@ -19,6 +22,16 @@ getSubList io ie list =
         (x, y, head::sublist) ->
             getSubList (x-1) (y-1) sublist
 
+getElementList : Int -> List Int -> Int
+getElementList x list =
+    case (x, list) of
+        (_, []) ->
+            -1
+        (0, head::tail) ->
+            head
+        (x, head::tail) ->
+            getElementList (x-1) tail
+
 -- STYLE
 
 size : Int
@@ -31,13 +44,26 @@ value : Int
 value = 4
 
 boxHeight : Int
-boxHeight = 130 
+boxHeight = 130
+
+player1Color : String
+player1Color = "#1abc9c"
+
+player2Color : String
+player2Color = "#a6aaa9"
+
+getPlayerColor : Turn -> String
+getPlayerColor turn =
+    case turn of
+        Player1 -> "#1abc9c"
+        Player2 -> "#a6aaa9"
+--      NoTurn -> "#252727"
 
 menuBoxStyle : Attribute Msg
 menuBoxStyle = style 
     [ ("border-radius", "10px 10px 10px 10px")
     , ("border", "9px double #ffffff")
-    , ("background-color", "#1abc9c")
+    , ("background-color", player1Color)
     , ("color", "#ffffff")
     , ("height", "300px")
     , ("width", "100%")
@@ -74,11 +100,11 @@ smallBoxStyle = style
 
 player1Style : Attribute Msg
 player1Style = style
-    [ ("background-color", "#1abc9c") ]
+    [ ("background-color", player1Color) ]
 
 player2Style : Attribute Msg
 player2Style = style
-    [ ("background-color", "#a6aaa9") ]
+    [ ("background-color", player2Color) ]
 
 pxnull : Attribute Msg
 pxnull = style
@@ -92,9 +118,20 @@ type Turn = Player1 | Player2
 
 type Status = Menu | Playing | EndGame
 
+type alias Feedback =
+    { turn : Turn
+    , msg : String
+    }
+
 type alias Board = 
     { list : List Int
     } 
+
+turnToString : Turn -> String
+turnToString turn =
+    case turn of
+        Player1 -> "Player1"
+        Player2 -> "Player2"
 
 initBoard : Board
 initBoard =
@@ -103,16 +140,57 @@ initBoard =
                 ( List.append (List.map (\n -> value) [1..size]) [0] )
     }
 
+initFeedback : Feedback
+initFeedback = 
+    { turn = Player1
+    , msg = "Starts Player1" }
+
+turnFeedback : Turn -> Feedback
+turnFeedback t =
+    { turn = t
+    , msg = (turnToString t) ++ " turn" }
+
+extraTurnFeedback : Turn -> Feedback
+extraTurnFeedback t =
+    { turn = t
+    , msg = "Extra turn!" }
+
+captureFeedback : Turn -> Feedback
+captureFeedback t =
+    { turn = t
+    , msg = "Capture!" }
+
+noMovesFeedback : Turn -> Feedback
+noMovesFeedback t =
+    { turn = t
+    , msg = "No more moves!" }
+
+endGameFeedback : Board -> Feedback
+endGameFeedback board = 
+    if (getElementList size board.list) == (getElementList (boardSize-1) board.list)
+    then
+        { turn = Player1
+        , msg = "Its a tie!" }
+    else if (getElementList size board.list) < (getElementList (boardSize-1) board.list)
+    then 
+        { turn = Player2
+        , msg = "Player2 wins!" }
+    else 
+        { turn = Player1
+        , msg = "Player1 wins!" }
+
+
 type alias Model =
     { status : Status
     , board : Board
     , turn : Turn
+    , feedback : List Feedback
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {status=Menu, board=initBoard, turn=Player1}, Cmd.none )
+    ( {status=Menu, board=initBoard, turn=Player1, feedback=[initFeedback]}, Cmd.none )
 
 
 
@@ -122,13 +200,14 @@ init =
 type Msg
     = NoOp | Start | Move Int
 
-getEndGameText : Board -> String
-getEndGameText board = 
-    if (getSeeds size board.list) == (getSeeds (boardSize-1) board.list)
-    then "Its a tie!"
-    else if (getSeeds size board.list) < (getSeeds (boardSize-1) board.list)
-    then "Player2 wins!"
-    else "Player1 wins!"
+getFeedbackView : List Feedback -> Html Msg
+getFeedbackView list = 
+    div [ class "row text-center", style [ ("padding", "50px 15px 0") ]]
+        (List.map
+            (\n ->
+                h2 [ style [ ("color", getPlayerColor n.turn) ]] [ text n.msg ])
+            list)
+
 
 getPlayer2Row : Model ->  List (Html Msg)
 getPlayer2Row model = 
@@ -181,24 +260,26 @@ getMenuView model =
 
 getPlayingView : Model -> Html Msg
 getPlayingView model = 
-    div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-        [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(getSeeds (boardSize-1) model.board.list)) ]]]
-        , div [ class "col-md-6", pxnull]
-              ((getPlayer2Row model) ++ (getPlayer1Row model))
-        , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getSeeds size model.board.list)) ]]]
-        ]
+    div []
+        [ div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
+              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(getElementList (boardSize-1) model.board.list)) ]]]
+              , div [ class "col-md-6", pxnull]
+                    ((getPlayer2Row model) ++ (getPlayer1Row model))
+              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getElementList size model.board.list)) ]]]
+              ]
+        , getFeedbackView model.feedback
+        ] 
 
 getEndGameView : Model -> Html Msg 
 getEndGameView model = 
     div []
         [ div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(getSeeds (boardSize-1) model.board.list)) ]]]
+              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(getElementList (boardSize-1) model.board.list)) ]]]
               , div [ class "col-md-6", pxnull]
                     ((getPlayer2Row model) ++ (getPlayer1Row model))
-              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getSeeds size model.board.list)) ]]]
+              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(getElementList size model.board.list)) ]]]
               ]
-        , div [ class "row text-center", style [ ("padding", "50px 15px 0") ] ]
-              [ h2 [] [ text ( getEndGameText model.board ) ]]
+        , getFeedbackView model.feedback
         ] 
 
 -- VIEW
@@ -225,23 +306,13 @@ diffBoardSides i1 i2 =
     else
         True
 
-getOpposite : Int -> Int
+getOpposite : Int -> Int -- Rehacer
 getOpposite hole =
     if hole <= size
     then
-        getSeeds hole (List.reverse(List.map (\n -> n) (13::[(size+1)..(boardSize-2)])))
+        getElementList hole (List.reverse(List.map (\n -> n) (13::[(size+1)..(boardSize-2)])))
     else
-        getSeeds (hole-size-1) (List.reverse(List.map (\n -> n) (6::[0..(size-1)])))
-
-getSeeds : Int -> List Int -> Int
-getSeeds x list =
-    case (x, list) of
-        (_, []) ->
-            -1
-        (0, head::tail) ->
-            head
-        (x, head::tail) ->
-            getSeeds (x-1) tail
+        getElementList (hole-size-1) (List.reverse(List.map (\n -> n) (6::[0..(size-1)])))
 
 getPlayerHole : Turn -> Int
 getPlayerHole turn =
@@ -280,20 +351,21 @@ removeSeedsFromHole list index =
 capture : Board -> Int -> Int -> Int -> Board
 capture board hole1 hole2 playerHole =
     (board)
-    |> (\n -> {n | list = (addSeedsToHole n.list (getSeeds hole1 n.list) playerHole)})
-    |> (\n -> {n | list = (addSeedsToHole n.list (getSeeds hole2 n.list) playerHole)})
+    |> (\n -> {n | list = (addSeedsToHole n.list (getElementList hole1 n.list) playerHole)})
+    |> (\n -> {n | list = (addSeedsToHole n.list (getElementList hole2 n.list) playerHole)})
     |> (\n -> {n | list = (removeSeedsFromHole n.list hole1)})
     |> (\n -> {n | list = (removeSeedsFromHole n.list hole2)})
 
 checkCapture : Model -> Int -> Int -> Model
-checkCapture model position seeds =
+checkCapture model position seeds = -- Validate posible positions
     if (((position+seeds)%boardSize) /= size)
     && (((position+seeds)%boardSize) /= (boardSize-1))
-    && ((getSeeds ((position+seeds)%boardSize) model.board.list) == 1) -- This hole was empty
-    && ((getSeeds (getOpposite((position+seeds)%boardSize)) model.board.list) /= 0)
+    && ((getElementList ((position+seeds)%boardSize) model.board.list) == 1) -- This hole was empty
+    && ((getElementList (getOpposite((position+seeds)%boardSize)) model.board.list) /= 0)
     && not (diffBoardSides position ((position+seeds)%boardSize))
     then 
-        { model | board=(capture model.board ((position+seeds)%boardSize) (getOpposite ((position+seeds)%14)) (getPlayerHole model.turn))}
+        ({ model | board=(capture model.board ((position+seeds)%boardSize) (getOpposite ((position+seeds)%14)) (getPlayerHole model.turn))})
+        |> (\n -> ({ n | feedback =  (List.append n.feedback [captureFeedback n.turn])}))
     else
         model
 
@@ -315,24 +387,27 @@ updateBoard board position seeds =
         updateList board position seeds
     }
 
-updateModel : Model -> Int -> Int -> Model
-updateModel model position seeds = 
+updateMoveModel : Model -> Int -> Int -> Model
+updateMoveModel model position seeds = 
     ({model | board=(updateBoard model.board position seeds)})
+    |> (\n -> { n | feedback =  [] })
     |> (\n -> (checkCapture n position seeds))
 
-updateTurn : Turn -> Int -> Int -> Turn 
-updateTurn turn position seeds = 
-    case turn of
-        Player1 -> 
-            if ((position+seeds)%boardSize) == size
-            || seeds == 0
-            then Player1
-            else Player2
-        Player2 -> 
-            if ((position+seeds)%boardSize) == (boardSize-1)
-            || seeds == 0
-            then Player2
-            else Player1
+updateTurnModel : Model -> Int -> Int -> Model 
+updateTurnModel model position seeds = 
+    if seeds == 0
+    then
+        model
+    else
+        case model.turn of
+            Player1 -> 
+                if ((position+seeds)%boardSize) == size
+                then { model | feedback = List.append model.feedback [extraTurnFeedback model.turn] }
+                else { model | turn = Player2  }
+            Player2 -> 
+                if ((position+seeds)%boardSize) == (boardSize-1)
+                then { model | feedback = List.append model.feedback [extraTurnFeedback model.turn] }
+                else { model | turn = Player1  }
 
 updateStatus : Board -> Status
 updateStatus board =
@@ -351,28 +426,48 @@ clearBoard list io ie =
         (head::tail, 0, y) -> (0 :: clearBoard tail 0 (y-1))
         (head::tail, x, y) -> (head :: clearBoard tail (x-1) (y-1))
 
-checkNoMoves : Turn -> List Int -> List Int
-checkNoMoves turn list =
+noMovesList : Turn -> List Int -> List Int
+noMovesList turn list =
     case turn of
         Player1 -> 
-            if checkEmptyList 0 size list
-            then 
-                (addSeedsToHole list (List.sum (getSubList (size+1) (boardSize-1) list)) (boardSize-1) )
-                |> (\n -> clearBoard n (size+1) (boardSize-1))
-            else
-                list
+            (addSeedsToHole list (List.sum (getSubList (size+1) (boardSize-1) list)) (boardSize-1) )
+            |> (\n -> clearBoard n (size+1) (boardSize-1))
         Player2 -> 
-            if checkEmptyList (size+1) (boardSize-1) list
+            (addSeedsToHole list (List.sum (getSubList 0 size list)) size )
+            |> (\n -> clearBoard n 0 size)
+            
+noMovesBoard : Turn -> Board -> Board
+noMovesBoard turn board =
+    {board | list = noMovesList turn board.list}
+
+checkNoMovesModel : Model -> Model
+checkNoMovesModel model =
+    case model.turn of
+        Player1 ->
+            if checkEmptyList 0 size model.board.list
             then 
-                (addSeedsToHole list (List.sum (getSubList 0 size list)) size )
-                |> (\n -> clearBoard n 0 size)
+                ( { model | board = (noMovesBoard model.turn model.board)})
+                |> (\n -> ({ n | feedback =  (List.append n.feedback [noMovesFeedback n.turn])}))
             else
-                list
+                model
+        Player2 ->
+            if checkEmptyList (size+1) (boardSize-1) model.board.list
+            then 
+                ( { model | board = (noMovesBoard model.turn model.board)})
+                |> (\n -> ({ n | feedback =  (List.append n.feedback [noMovesFeedback n.turn])}))
+            else
+                model
 
-checkNoMovesBoard : Turn -> Board -> Board
-checkNoMovesBoard turn board =
-    {board | list = checkNoMoves turn board.list}
-
+updateStatusModel : Model -> Model
+updateStatusModel model =
+    if (checkEmptyList 0 size model.board.list)
+    && (checkEmptyList (size+1) (boardSize-1) model.board.list)
+    then
+        ( { model | status = EndGame})
+        |> (\n -> ({ n | feedback = (List.append n.feedback [endGameFeedback n.board]) }))
+    else
+        ( { model | status = Playing})
+        |> (\n -> ({ n | feedback = (List.append n.feedback [turnFeedback n.turn]) }))
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -382,10 +477,10 @@ update msg model =
         Start ->
             ( {model | status=Playing}, Cmd.none )
         Move position ->
-            ( (updateModel model position (getSeeds position model.board.list)), Cmd.none )
-            |> (\(n,m) -> ({n | turn=(updateTurn n.turn position (getSeeds position model.board.list))}, m))
-            |> (\(n,m) -> ({n | board=(checkNoMovesBoard n.turn n.board)}, m))
-            |> (\(n,m) -> ({n | status=(updateStatus n.board)}, m))
+            ( (updateMoveModel model position (getElementList position model.board.list)), Cmd.none )
+            |> (\(n,m) -> ((updateTurnModel n position (getElementList position model.board.list)), m))
+            |> (\(n,m) -> ((checkNoMovesModel n), m))
+            |> (\(n,m) -> ((updateStatusModel n), m))
 
 
 -- SUBSCRIPTIONS
@@ -407,4 +502,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
+
+-- TODO: Undo
 
