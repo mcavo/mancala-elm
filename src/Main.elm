@@ -27,7 +27,6 @@ getPlayerColor turn =
     case turn of
         Player1 -> "#1abc9c"
         Player2 -> "#a6aaa9"
---      NoTurn -> "#252727"
 
 menuBoxStyle : Attribute Msg
 menuBoxStyle = style 
@@ -35,7 +34,7 @@ menuBoxStyle = style
     , ("border", "9px double #ffffff")
     , ("background-color", player1Color)
     , ("color", "#ffffff")
-    , ("height", "300px")
+    , ("height", "320px")
     , ("width", "100%")
     , ("padding", "40px 15px 0")
     ]
@@ -102,12 +101,12 @@ getWinnerH2 : MancalaAPI.Board -> Html Msg
 getWinnerH2 board =
     if (MancalaAPI.getElementList size board.list) == (MancalaAPI.getElementList (boardSize-1) board.list)
     then
-        h2 [] [ text "Its a tie!" ]
+        h2 [ class "mancala-feedback" ] [ text "Its a tie!" ]
     else if (MancalaAPI.getElementList size board.list) < (MancalaAPI.getElementList (boardSize-1) board.list)
     then 
-        h2 [ style [ ("color", player2Color) ]] [ text "Player2 wins!" ]
+        h2 [ class "mancala-feedback", style [ ("color", player2Color) ]] [ text "Player2 wins!" ]
     else 
-        h2 [ style [ ("color", player1Color) ]] [ text "Player1 wins!" ]
+        h2 [ class "mancala-feedback", style [ ("color", player1Color) ]] [ text "Player1 wins!" ]
     
 
 type Msg
@@ -118,7 +117,7 @@ getFeedbackView list =
     div [ class "row text-center", style [ ("padding", "50px 15px 0") ]]
         (List.map
             (\n ->
-                h2 [ style [ ("color", getPlayerColor n.turn) ]] [ text n.msg ])
+                h2 [ class "mancala-feedback", style [ ("color", getPlayerColor n.turn) ]] [ text n.msg ])
             list)
 
 getWinnerView : MancalaAPI.Board -> Html Msg
@@ -134,15 +133,15 @@ getPlayer2Row model =
     then
         List.map 
             (\(n,m) -> 
-                div [ class "col-md-2", smallBoxStyle, player2Style, pxnull, onClick( Move m )]
-                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
+                button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player2Style, pxnull, onClick( Move m )]
+                       [ p [][text (toString(n))] ]
             ) 
             (List.map2 (,) (List.reverse(MancalaAPI.getSubList (size+1) (boardSize-1) model.board.list )) (List.reverse(List.map (\n -> n) [(size+1)..(boardSize-2)])))
     else
         List.map 
             (\n -> 
                 div [ class "col-md-2", smallBoxStyle, player2Style, pxnull]
-                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
+                    [ h2 [class "mancala-feedback", verticalStyle] [ text (toString(n)) ] ]
             ) 
             (List.reverse(MancalaAPI.getSubList (size+1) (boardSize-1) model.board.list ))
 
@@ -153,15 +152,15 @@ getPlayer1Row model =
     then
         List.map 
             (\(n,m) -> 
-                div [ class "col-md-2", smallBoxStyle, player1Style, pxnull, onClick( Move m )]
-                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
+                button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move m )]
+                       [ p [][text (toString(n))] ]
             ) 
             (List.map2 (,) (MancalaAPI.getSubList 0 (size) model.board.list) (List.map (\n -> n) [0..(size-1)]))
     else
         List.map 
             (\n -> 
                 div [ class "col-md-2", smallBoxStyle, player1Style, pxnull]
-                    [ h2 [verticalStyle] [ text (toString(n)) ] ]
+                    [ h2 [class "mancala-feedback", verticalStyle] [ text (toString(n)) ] ]
             ) 
             (MancalaAPI.getSubList 0 (size) model.board.list)
 
@@ -170,20 +169,20 @@ getMenuView model =
     div [ class "row", style [ ("padding", "200px 15px 0") ] ]
         [ div [ class "col-md-offset-4 col-md-4 text-center"] 
               [ div [menuBoxStyle] 
-                    [ div [class "h2"]
+                    [ div [class "h2 mancala-title"]
                           [text "Mancala"]
                     , p [borderStyle] []
-                    , p [class "h3"] [text "Rules"]
-                    , p [class "h3", onClick (Start)] [text "Play"] ]]]
+                    , p [][ button [class "btn btn-link mancala-action"] [text "Rules"]]
+                    , p [][ button [class "btn btn-link mancala-action", onClick (Start)] [text "Play"] ]]]]
 
 getPlayingView : MancalaAPI.Model -> Html Msg
 getPlayingView model = 
     div []
         [ div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(MancalaAPI.getElementList (boardSize-1) model.board.list)) ]]]
+              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList (boardSize-1) model.board.list)) ]]]
               , div [ class "col-md-6", pxnull]
                     ((getPlayer2Row model) ++ (getPlayer1Row model))
-              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
+              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
               ]
         , getFeedbackView model.feedback
         ] 
@@ -192,10 +191,10 @@ getEndGameView : MancalaAPI.Model -> Html Msg
 getEndGameView model = 
     div []
         [ div [ class "row text-center", style [ ("padding", "200px 15px 0") ] ]
-              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [verticalStyle] [text (toString(MancalaAPI.getElementList (boardSize-1) model.board.list)) ]]]
+              [ div [ class "col-md-offset-2 col-md-1", pxnull] [ div [ bigBoxStyle, player2Style][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList (boardSize-1) model.board.list)) ]]]
               , div [ class "col-md-6", pxnull]
                     ((getPlayer2Row model) ++ (getPlayer1Row model))
-              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
+              , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
               ]
         , getFeedbackView model.feedback
         , getWinnerView model.board

@@ -1,0 +1,62 @@
+@font-face {
+    font-family: Blogger-Sans-Medium;
+    src: url(../fonts/Blogger-Sans-Medium.ttf);
+}
+
+@font-face {
+    font-family: Blogger-Sans-Light;
+    src: url(../fonts/Blogger-Sans-Light.ttf);
+}
+
+@font-face {
+    font-family: Blogger-Sans;
+    src: url(../fonts/Blogger-Sans.ttf);
+}
+
+@font-face {
+    font-family: BuffaloNickel;
+    src: url(../fonts/BuffaloNickel.ttf);
+}
+
+
+.mancala-title {
+	font-family: Blogger-Sans-Medium;
+	font-size: 54px;
+}
+
+.mancala-action {
+	font-family: Blogger-Sans;
+	font-size: 30px;
+	color: white;
+}
+
+.mancala-action:hover, .mancala-action:focus {
+	font-family: Blogger-Sans;
+	font-size: 34px;
+	text-decoration: none;
+	color: white;
+}
+
+.mancala-feedback {
+	font-family: Blogger-Sans;
+	font-size: 30px;
+}
+
+.mancala-hole {
+	font-family: Blogger-Sans;
+	color: white;
+	font-size: 30px;
+	text-decoration: none;
+}
+
+.mancala-hole:hover, .mancala-hole:focus {
+	font-family: Blogger-Sans;
+	color: white;
+	font-size: 34px;
+	text-decoration: none;
+}
+
+.mancala-text {
+	font-family: Blogger-Sans-Light;
+	font-size: 54px;
+}
