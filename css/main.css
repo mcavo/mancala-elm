@@ -30,11 +30,20 @@
 	color: white;
 }
 
-.mancala-action:hover, .mancala-action:focus {
+.mancala-action:hover {
 	font-family: Blogger-Sans;
 	font-size: 34px;
 	text-decoration: none;
 	color: white;
+	outline: 0px;
+}
+
+.mancala-action:focus {
+	font-family: Blogger-Sans;
+	font-size: 30px;
+	text-decoration: none;
+	color: white;
+	outline: 0px;
 }
 
 .mancala-feedback {
@@ -47,13 +56,23 @@
 	color: white;
 	font-size: 30px;
 	text-decoration: none;
+	outline: 0px;
 }
 
-.mancala-hole:hover, .mancala-hole:focus {
+.mancala-hole:hover {
 	font-family: Blogger-Sans;
 	color: white;
 	font-size: 34px;
 	text-decoration: none;
+	outline: 0px;
+}
+
+.mancala-hole:focus {
+	font-family: Blogger-Sans;
+	color: white;
+	font-size: 30px;
+	text-decoration: none;
+	outline: 0px;
 }
 
 .mancala-text {
