@@ -1,7 +1,7 @@
 'use strict';
 
 //require('ace-css/css/ace.css');
-global.jQuery = require('jquery');
+//global.jQuery = require('jquery');
 //require('font-awesome/css/font-awesome.css');
 
 // Require index.html so it gets copied to dist
