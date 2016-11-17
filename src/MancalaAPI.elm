@@ -61,14 +61,14 @@ posiblePlays node =
     case node.model.turn of
         Player1 ->
             ([0..size-1]) 
-            |> (List.filter (isNotEmpty node.board.list))
+            |> (List.filter (isNotEmpty node.model.board.list))
         Player2 ->
             ([(size+1)..boardSize-1])
-            |> (List.filter (isNotEmpty node.board.list))
+            |> (List.filter (isNotEmpty node.model.board.list))
 
 isNotEmpty : List Int -> Int -> Bool
 isNotEmpty list n = 
-    case getElementList n list of
+    case (getElementList n list) of
         0 ->
             False
         _ -> 
@@ -123,21 +123,23 @@ getBestMove model = (getBestMoveFromNode (modelToNode model)).position
 
 getBestMoveFromNode : MinimaxNode ->MinimaxDecision
 getBestMoveFromNode node =
-    case node.depth of
-        minimaxDepth -> {position = node.previusMovement ,score = (getHeuristicFromNode node) }
-        _ -> if(node.model.status == EndGame)
+    if(node.depth == minimaxDepth)
+        then
+            {position = node.previusMovement ,score = (getHeuristicFromNode node) }
+        else
+            if (node.model.status == EndGame)
                 then
                     {position = node.previusMovement ,score = (getHeuristicFromNode node) }
                 else
                     if(node.model.turn == aiplayer)
                         then
-                            if(node.depth == 0)
+                            if (node.depth == 0)
                                 then
                                     List.foldr maxNode {position = -1, score = -1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))
                                 else
                                     {position = node.previusMovement , score = (List.foldr maxNode {position = -1, score = -1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))).score}
                         else
-                            if(node.depth == 0)
+                            if (node.depth == 0)
                                 then
                                     List.foldr minNode {position = -1, score = 1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))
                                 else

@@ -185,8 +185,8 @@ getPlayingView model =
               , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
               ]
         , getFeedbackView model.feedback
-        , button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move (MancalaAPI.getBestMove model)) )]
-                       [ p [][text "Make AI Move"] ]
+        , button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move (MancalaAPI.getBestMove model))]
+                       [ p [][text "Make AI Move"] ] 
         ] 
 
 getEndGameView : MancalaAPI.Model -> Html Msg 
