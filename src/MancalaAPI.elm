@@ -6,10 +6,17 @@ size = 6
 boardSize : Int
 boardSize = 14
 
+minimaxDepth : Int
+minimaxDepth = 6
+
+aiplayer : Turn
+aiplayer = Player2
+
+
 value : Int
 value = 4
 
-type Turn = Player1 | Player2
+type Turn = Player1 | Player2 -- Player2 is considered to be the AI
 
 type Status = Menu | Playing | EndGame
 
@@ -28,6 +35,139 @@ type alias Model =
     , turn : Turn
     , feedback : List Feedback
     }
+
+type alias MinimaxNode =
+    { model : Model
+    , previusMovement : Int
+    , depth : Int
+    }
+
+type alias MinimaxDecision =
+    {
+      position : Int
+    , score : Int 
+    }
+
+
+-- AI
+
+--A partir de un nodo, conseguir las posibles jugadas
+
+modelToNode : Model -> MinimaxNode
+modelToNode nodeModel = { model = nodeModel, previusMovement = -1, depth = 0  }
+
+posiblePlays : MinimaxNode -> List Int
+posiblePlays node = 
+    case node.model.turn of
+        Player1 ->
+            ([0..size-1]) 
+            |> (List.filter (isNotEmpty node.model.board.list))
+        Player2 ->
+            ([(size+1)..boardSize-1])
+            |> (List.filter (isNotEmpty node.model.board.list))
+
+isNotEmpty : List Int -> Int -> Bool
+isNotEmpty list n = 
+    case (getElementList n list) of
+        0 ->
+            False
+        _ -> 
+            True
+
+
+makePlay : MinimaxNode -> Int -> MinimaxNode
+makePlay node play =
+    {
+        model = 
+            ( (updateMoveModel node.model play (getElementList play node.model.board.list)) )
+            |> (\(n) -> ((updateTurnModel n play (getElementList play node.model.board.list))))
+            |> (\(n) -> ((checkNoMovesModel n)))
+            |> (\(n) -> ((updateStatusModel n)))
+    ,   previusMovement = play
+    ,   depth = node.depth+1
+    }
+
+getHeuristicFromNode : MinimaxNode -> Int
+getHeuristicFromNode node = getHeuristic node.model
+
+
+getHeuristic : Model -> Int
+getHeuristic model = 
+    if (model.status == EndGame)
+    then
+        if((player1Score model)== (player2Score model))
+        then
+            0
+        else
+            if(((player2Score model) - (player1Score model) ) < 0)
+            then
+                ((player2Score model)- (player1Score model))-300
+            else
+                ((player2Score model) - (player1Score model) )+300
+    else
+        ((player2Score model)- (player1Score model) )
+
+
+
+player1Score : Model ->Int
+player1Score model = getElementList size model.board.list
+
+player2Score : Model ->Int
+player2Score model = getElementList (boardSize-1) model.board.list
+
+
+
+
+getBestMove : Model -> Int
+getBestMove model = (getBestMoveFromNode (modelToNode model)).position
+
+getBestMoveFromNode : MinimaxNode ->MinimaxDecision
+getBestMoveFromNode node =
+    if(node.depth == minimaxDepth)
+        then
+            {position = node.previusMovement ,score = (getHeuristicFromNode node) }
+        else
+            if (node.model.status == EndGame)
+                then
+                    {position = node.previusMovement ,score = (getHeuristicFromNode node) }
+                else
+                    if(node.model.turn == aiplayer)
+                        then
+                            if (node.depth == 0)
+                                then
+                                    List.foldr maxNode {position = -1, score = -1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))
+                                else
+                                    {position = node.previusMovement , score = (List.foldr maxNode {position = -1, score = -1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))).score}
+                        else
+                            if (node.depth == 0)
+                                then
+                                    List.foldr minNode {position = -1, score = 1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))
+                                else
+                                    {position = node.previusMovement , score = (List.foldr minNode {position = -1, score = 1000} (List.map getBestMoveFromNode (List.map (makePlay node) (posiblePlays node)))).score}
+
+
+
+
+minNode : MinimaxDecision -> MinimaxDecision -> MinimaxDecision
+minNode decisionA decisionB = 
+    if (decisionA.score > decisionB.score)
+        then 
+            decisionB
+        else
+            decisionA
+
+maxNode : MinimaxDecision -> MinimaxDecision -> MinimaxDecision
+maxNode decisionA decisionB = 
+    if (decisionA.score > decisionB.score)
+        then 
+            decisionA
+        else
+            decisionB
+
+
+-- END AI
+
+
 
 turnToString : Turn -> String
 turnToString turn =
