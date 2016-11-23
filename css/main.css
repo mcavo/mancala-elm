@@ -32,13 +32,13 @@
 
 .mancala-action:hover {
 	font-family: Blogger-Sans;
-	font-size: 34px;
+	font-size: 30px;
 	text-decoration: none;
-	color: white;
+	color: #d8dad9;
 	outline: 0px;
 }
 
-.mancala-action:focus {
+.mancala-action:focus, .mancala-action:active {
 	font-family: Blogger-Sans;
 	font-size: 30px;
 	text-decoration: none;

@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (class,style, src)
+import Html.Attributes exposing (id,class,style, src)
 import Html.Events exposing (onClick)
 import Html.App
 import MancalaAPI exposing (..)
@@ -34,7 +34,7 @@ menuBoxStyle = style
     , ("border", "9px double #ffffff")
     , ("background-color", player1Color)
     , ("color", "#ffffff")
-    , ("height", "320px")
+    , ("height", "160%")
     , ("width", "100%")
     , ("padding", "40px 15px 0")
     ]
@@ -172,8 +172,15 @@ getMenuView model =
                     [ div [class "h2 mancala-title"]
                           [text "Mancala"]
                     , p [borderStyle] []
-                    , p [][ button [class "btn btn-link mancala-action"] [text "Rules"]]
-                    , p [][ button [class "btn btn-link mancala-action", onClick (Start)] [text "Play"] ]]]]
+                    , p [ id "rules" ][ button [class "btn btn-link mancala-action"] [text "Rules"]]
+                    , p [ id "p1v1" ][ button [class "btn btn-link mancala-action", onClick (Start)] [text "Play 1v1"] ]
+                    , p [ id "pvc" ][ button [id "pvc", class "btn btn-link mancala-action"] [text "Play vs Computer"]]
+                    , div [ id "diff", style [ ("display", "none") ]]
+                          [ p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ]] [text "Easy"]]
+                          , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ]] [text "Moderate"]]
+                          , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ]] [text "Hard"]]
+                          , p [ id "back_btn" ][ button [class "btn btn-warning mancala-action", style [ ("font-size", "24px") ]] [text "Back"]]
+                    ]]]]
 
 getPlayingView : MancalaAPI.Model -> Html Msg
 getPlayingView model = 
