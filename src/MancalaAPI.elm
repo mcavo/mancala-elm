@@ -18,7 +18,7 @@ value = 4
 
 type Turn = Player1 | Player2 -- Player2 is considered to be the AI
 
-type Status = Menu | Playing | EndGame
+type Status = Menu | Rules | Playing | EndGame
 
 type alias Feedback =
     { turn : Turn
