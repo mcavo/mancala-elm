@@ -6,8 +6,13 @@ size = 6
 boardSize : Int
 boardSize = 14
 
-minimaxDepth : Int
-minimaxDepth = 6
+minimaxDepth : Model -> Int
+minimaxDepth model = 
+    case model.difficulty of
+        Easy -> 3
+        Moderate -> 5
+        Hard -> 7
+        Player -> 0
 
 aiplayer : Turn
 aiplayer = Player2
@@ -20,7 +25,9 @@ type Turn = Player1 | Player2 -- Player2 is considered to be the AI
 
 type Status = Menu | Rules | Playing | EndGame
 
-type alias Feedback =
+type Difficulty = Player | Easy | Moderate | Hard
+
+type alias Feedback = 
     { turn : Turn
     , msg : String
     }
@@ -33,6 +40,7 @@ type alias Model =
     { status : Status
     , board : Board
     , turn : Turn
+    , difficulty : Difficulty
     , feedback : List Feedback
     }
 
@@ -123,7 +131,7 @@ getBestMove model = (getBestMoveFromNode (modelToNode model)).position
 
 getBestMoveFromNode : MinimaxNode ->MinimaxDecision
 getBestMoveFromNode node =
-    if(node.depth == minimaxDepth)
+    if(node.depth == (minimaxDepth node.model))
         then
             {position = node.previusMovement ,score = (getHeuristicFromNode node) }
         else

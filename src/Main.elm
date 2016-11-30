@@ -123,7 +123,7 @@ pxnull = style
 
 init : ( MancalaAPI.Model, Cmd Msg )
 init =
-    ( {status=Menu, board=MancalaAPI.initBoard, turn=Player1, feedback=[MancalaAPI.initFeedback]}, Cmd.none )
+    ( {status=Menu, board=MancalaAPI.initBoard, turn=Player1, feedback=[MancalaAPI.initFeedback], difficulty=Player}, Cmd.none )
 
 
 
@@ -142,7 +142,7 @@ getWinnerH2 board =
     
 
 type Msg
-    = Back | ShowRules | Start | Move Int
+    = Back | ShowRules | Start Difficulty | Move Int
 
 getFeedbackView : List MancalaAPI.Feedback -> Html Msg
 getFeedbackView list = 
@@ -162,6 +162,7 @@ getPlayer2Row : MancalaAPI.Model ->  List (Html Msg)
 getPlayer2Row model = 
     if model.turn == Player2
     && model.status /= EndGame
+    && model.difficulty == Player
     then
         List.map 
             (\(n,m) -> 
@@ -205,12 +206,12 @@ getMenuView model =
                           [text "Mancala"]
                     , p [borderStyle] []
                     , p [ id "rules" ][ button [class "btn btn-link mancala-action", onClick (ShowRules)] [text "Rules"]]
-                    , p [ id "p1v1" ][ button [class "btn btn-link mancala-action", onClick (Start)] [text "Play 1v1"] ]
+                    , p [ id "p1v1" ][ button [class "btn btn-link mancala-action", onClick (Start Player)] [text "Play 1v1"] ]
                     , p [ id "pvc" ][ button [id "pvc", class "btn btn-link mancala-action"] [text "Play vs Computer"]]
                     , div [ id "diff", style [ ("display", "none") ]]
-                          [ p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ]] [text "Easy"]]
-                          , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ]] [text "Moderate"]]
-                          , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ]] [text "Hard"]]
+                          [ p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ], onClick (Start Easy)] [text "Easy"]]
+                          , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ], onClick (Start Moderate)] [text "Moderate"]]
+                          , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ], onClick (Start Hard)] [text "Hard"]]
                           , p [ id "back_btn" ][ button [class "btn btn-warning mancala-action", style [ ("font-size", "24px") ]] [text "Back"]]
                     ]]]]
 
@@ -253,9 +254,23 @@ getPlayingView model =
               , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
               ]
         , getFeedbackView model.feedback
-        , button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move (MancalaAPI.getBestMove model))]
-                       [ p [][text "Make AI Move"] ] 
+        , div[][ makeMoveButton model]
         ] 
+
+makeMoveButton : MancalaAPI.Model -> Html Msg
+makeMoveButton model = 
+    case model.difficulty of
+        Player -> div [] []
+        Easy -> buttonIfTurn model
+        Moderate -> buttonIfTurn model
+        Hard -> buttonIfTurn model
+
+buttonIfTurn : MancalaAPI.Model -> Html Msg
+buttonIfTurn model = 
+    case model.turn of
+        Player2 -> div [] [ button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move (MancalaAPI.getBestMove model))]
+                       [ p [][text "Make AI Move"] ]]
+        Player1 -> div [] []
 
 getEndGameView : MancalaAPI.Model -> Html Msg 
 getEndGameView model = 
@@ -296,11 +311,13 @@ update msg model =
         Back ->
             ( {model | status=Menu}, Cmd.none )
             |> (\(n,m) -> ({n | feedback=[]}, m))
-        Start ->
+        Start difficultyForGame ->
             ( {model | status=Playing}, Cmd.none )
             |> (\(n,m) -> ({n | board=MancalaAPI.initBoard}, m))
             |> (\(n,m) -> ({n | feedback=[MancalaAPI.initFeedback]}, m))
             |> (\(n,m) -> ({n | turn=Player1}, m))
+            |> (\(n,m) -> ({n | difficulty=difficultyForGame}, m))
+        
         ShowRules ->
             ( {model | status=Rules}, Cmd.none )
         Move position ->
