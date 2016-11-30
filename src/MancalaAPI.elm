@@ -63,7 +63,7 @@ posiblePlays node =
             ([0..size-1]) 
             |> (List.filter (isNotEmpty node.model.board.list))
         Player2 ->
-            ([(size+1)..boardSize-1])
+            ([(size+1)..boardSize-2])
             |> (List.filter (isNotEmpty node.model.board.list))
 
 isNotEmpty : List Int -> Int -> Bool
