@@ -6,11 +6,6 @@ import Html.Events exposing (onClick)
 import Html.App
 import MancalaAPI exposing (..)
 
--- TODO: undo
--- TODO: ai
-
-
-
 -- STYLE
 
 boxHeight : Int
@@ -71,10 +66,18 @@ section = style
     [ ("padding", "0px 0 20px")
     ]
 
+textTitle : Attribute Msg
+textTitle = style
+    [ ("font-family", "Blogger-Sans")
+    , ("font-size", "30px")
+    , ("color", "white")
+    ]
+
 replayStyle : Attribute Msg
 replayStyle = style 
     [ ("height", "5%")
     , ("width", "5%")
+    ,("padding", "0px 0 80px")
     ]
 
 borderStyle : Attribute Msg
@@ -125,9 +128,26 @@ init : ( MancalaAPI.Model, Cmd Msg )
 init =
     ( {status=Menu, board=MancalaAPI.initBoard, turn=Player1, feedback=[MancalaAPI.initFeedback], difficulty=Player}, Cmd.none )
 
-
-
 -- MESSAGES
+
+type Msg
+    = Back | ShowAIMenu | ShowRules | Start Difficulty | Move Int
+
+-- VIEW
+
+view : MancalaAPI.Model -> Html Msg
+view model = 
+    case model.status of
+        Menu -> 
+            getMenuView model
+        AIMenu ->
+            getAIMenuView model
+        Rules ->
+            getRulesView model
+        Playing ->
+            getPlayingView model
+        EndGame ->
+            getEndGameView model
 
 getWinnerH2 : MancalaAPI.Board -> Html Msg
 getWinnerH2 board =
@@ -139,10 +159,6 @@ getWinnerH2 board =
         h2 [ class "mancala-feedback", style [ ("color", player2Color) ]] [ text "Player2 wins!" ]
     else 
         h2 [ class "mancala-feedback", style [ ("color", player1Color) ]] [ text "Player1 wins!" ]
-    
-
-type Msg
-    = Back | ShowRules | Start Difficulty | Move Int
 
 getFeedbackView : List MancalaAPI.Feedback -> Html Msg
 getFeedbackView list = 
@@ -207,12 +223,24 @@ getMenuView model =
                     , p [borderStyle] []
                     , p [ id "rules" ][ button [class "btn btn-link mancala-action", onClick (ShowRules)] [text "Rules"]]
                     , p [ id "p1v1" ][ button [class "btn btn-link mancala-action", onClick (Start Player)] [text "Play 1v1"] ]
-                    , p [ id "pvc" ][ button [id "pvc", class "btn btn-link mancala-action"] [text "Play vs Computer"]]
-                    , div [ id "diff", style [ ("display", "none") ]]
+                    , p [ id "pvc" ][ button [id "pvc", class "btn btn-link mancala-action", onClick (ShowAIMenu)] [text "Play vs Computer"]]
+                    
+                    ]]]
+
+getAIMenuView : MancalaAPI.Model -> Html Msg
+getAIMenuView model = 
+    div [ class "row", style [ ("padding", "200px 15px 0") ] ]
+        [ div [ class "col-md-offset-4 col-md-4 text-center"] 
+              [ div [menuBoxStyle] 
+                    [ div [class "h2 mancala-title"]
+                          [text "Mancala"]
+                    , p [borderStyle] []
+                    , p [ id "pvc", textTitle ] [text "Play vs Computer"]
+                    , div [ id "diff" ]
                           [ p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ], onClick (Start Easy)] [text "Easy"]]
                           , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ], onClick (Start Moderate)] [text "Moderate"]]
                           , p [][ button [class "btn btn-link mancala-action", style [ ("font-size", "26px") ], onClick (Start Hard)] [text "Hard"]]
-                          , p [ id "back_btn" ][ button [class "btn btn-warning mancala-action", style [ ("font-size", "24px") ]] [text "Back"]]
+                          , p [ id "back_btn" ][ button [class "btn btn-warning mancala-action", style [ ("font-size", "24px") ], onClick (Back)] [text "Back"]]
                     ]]]]
 
 getRulesView : MancalaAPI.Model -> Html Msg
@@ -288,20 +316,6 @@ getEndGameView model =
               ]
         ] 
 
--- VIEW
-
-view : MancalaAPI.Model -> Html Msg
-view model = 
-    case model.status of
-        Menu -> 
-            getMenuView model
-        Rules ->
-            getRulesView model
-        Playing ->
-            getPlayingView model
-        EndGame ->
-            getEndGameView model
-
 
 -- UPDATE
 
@@ -311,6 +325,11 @@ update msg model =
         Back ->
             ( {model | status=Menu}, Cmd.none )
             |> (\(n,m) -> ({n | feedback=[]}, m))
+
+        ShowAIMenu ->
+            ( {model | status=AIMenu}, Cmd.none )
+            |> (\(n,m) -> ({n | feedback=[]}, m))
+
         Start difficultyForGame ->
             ( {model | status=Playing}, Cmd.none )
             |> (\(n,m) -> ({n | board=MancalaAPI.initBoard}, m))
@@ -320,6 +339,7 @@ update msg model =
         
         ShowRules ->
             ( {model | status=Rules}, Cmd.none )
+
         Move position ->
             ( (updateMoveModel model position (MancalaAPI.getElementList position model.board.list)), Cmd.none )
             |> (\(n,m) -> ((MancalaAPI.updateTurnModel n position (MancalaAPI.getElementList position model.board.list)), m))

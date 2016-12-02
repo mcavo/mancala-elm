@@ -17,13 +17,12 @@ minimaxDepth model =
 aiplayer : Turn
 aiplayer = Player2
 
-
 value : Int
 value = 4
 
 type Turn = Player1 | Player2 -- Player2 is considered to be the AI
 
-type Status = Menu | Rules | Playing | EndGame
+type Status = Menu | AIMenu | Rules | Playing | EndGame
 
 type Difficulty = Player | Easy | Moderate | Hard
 
