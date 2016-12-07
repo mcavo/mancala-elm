@@ -55,7 +55,6 @@ type alias MinimaxDecision =
     , score : Int 
     }
 
-
 -- AI
 
 --A partir de un nodo, conseguir las posibles jugadas
@@ -174,13 +173,22 @@ maxNode decisionA decisionB =
 
 -- END AI
 
+playingVsComputer : Difficulty -> Bool
+playingVsComputer dif =
+    case dif of
+        Player -> False
+        Easy -> True
+        Moderate -> True
+        Hard -> True
 
 
-turnToString : Turn -> String
-turnToString turn =
-    case turn of
-        Player1 -> "Player1"
-        Player2 -> "Player2"
+turnToString : Turn -> Difficulty -> String
+turnToString turn computer =
+    case (turn, playingVsComputer computer) of
+        (Player1, True) -> "Player"
+        (Player2, True) -> "Computer"
+        (Player1, False) -> "Player1"
+        (Player2, False) -> "Player2"
 
 initBoard : Board
 initBoard =
@@ -189,15 +197,15 @@ initBoard =
                 ( List.append (List.map (\n -> value) [1..size]) [0] )
     }
 
-initFeedback : Feedback
-initFeedback = 
+initFeedback : Difficulty -> Feedback
+initFeedback dif = 
     { turn = Player1
-    , msg = "Starts Player1" }
+    , msg =  (turnToString Player1 dif) ++ " starts" }
 
-turnFeedback : Turn -> Feedback
-turnFeedback t =
+turnFeedback : Turn -> Difficulty -> Feedback
+turnFeedback t dif =
     { turn = t
-    , msg = (turnToString t) ++ " turn" }
+    , msg = (turnToString t dif) ++ "'s turn" }
 
 extraTurnFeedback : Turn -> Feedback
 extraTurnFeedback t =
@@ -410,4 +418,4 @@ updateStatusModel model =
         ( { model | status = EndGame})
     else
         ( { model | status = Playing})
-        |> (\n -> ({ n | feedback = (List.append n.feedback [turnFeedback n.turn]) }))
+        |> (\n -> ({ n | feedback = (List.append n.feedback [turnFeedback n.turn n.difficulty]) }))
