@@ -126,7 +126,7 @@ pxnull = style
 
 init : ( MancalaAPI.Model, Cmd Msg )
 init =
-    ( {status=Menu, board=MancalaAPI.initBoard, turn=Player1, feedback=[MancalaAPI.initFeedback], difficulty=Player}, Cmd.none )
+    ( {status=Menu, board=MancalaAPI.initBoard, turn=Player1, feedback=[MancalaAPI.initFeedback Player], difficulty=Player}, Cmd.none )
 
 -- MESSAGES
 
@@ -149,16 +149,16 @@ view model =
         EndGame ->
             getEndGameView model
 
-getWinnerH2 : MancalaAPI.Board -> Html Msg
-getWinnerH2 board =
+getWinnerH2 : MancalaAPI.Board -> MancalaAPI.Difficulty -> Html Msg
+getWinnerH2 board dif =
     if (MancalaAPI.getElementList size board.list) == (MancalaAPI.getElementList (boardSize-1) board.list)
     then
         h2 [ class "mancala-feedback" ] [ text "Its a tie!" ]
     else if (MancalaAPI.getElementList size board.list) < (MancalaAPI.getElementList (boardSize-1) board.list)
     then 
-        h2 [ class "mancala-feedback", style [ ("color", player2Color) ]] [ text "Player2 wins!" ]
+        h2 [ class "mancala-feedback", style [ ("color", player2Color) ]] [ text ((MancalaAPI.turnToString Player2 dif) ++ " wins!") ]
     else 
-        h2 [ class "mancala-feedback", style [ ("color", player1Color) ]] [ text "Player1 wins!" ]
+        h2 [ class "mancala-feedback", style [ ("color", player1Color) ]] [ text ((MancalaAPI.turnToString Player1 dif) ++ " wins!") ]
 
 getFeedbackView : List MancalaAPI.Feedback -> Html Msg
 getFeedbackView list = 
@@ -168,11 +168,10 @@ getFeedbackView list =
                 h2 [ class "mancala-feedback", style [ ("color", getPlayerColor n.turn) ]] [ text n.msg ])
             list)
 
-getWinnerView : MancalaAPI.Board -> Html Msg
-getWinnerView board =
+getWinnerView : MancalaAPI.Board -> MancalaAPI.Difficulty -> Html Msg
+getWinnerView board dif =
     div [ class "row text-center", style [ ("padding", "10px 15px 0") ]]
-        [ getWinnerH2 board ]
-
+        [ getWinnerH2 board dif]
 
 getPlayer2Row : MancalaAPI.Model ->  List (Html Msg)
 getPlayer2Row model = 
@@ -296,8 +295,9 @@ makeMoveButton model =
 buttonIfTurn : MancalaAPI.Model -> Html Msg
 buttonIfTurn model = 
     case model.turn of
-        Player2 -> div [] [ button [ class "col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move (MancalaAPI.getBestMove model))]
-                       [ p [][text "Make AI Move"] ]]
+        Player2 -> div [ class "text-center" ] 
+                       [ button [ class "col-md-offset-5 col-md-2 btn btn-link mancala-hole", smallBoxStyle, player1Style, pxnull, onClick( Move (MancalaAPI.getBestMove model))]
+                                [ p [] [ text "Make AI Move" ] ]]
         Player1 -> div [] []
 
 getEndGameView : MancalaAPI.Model -> Html Msg 
@@ -310,7 +310,7 @@ getEndGameView model =
               , div [ class "col-md-1", pxnull] [ div [ bigBoxStyle, player1Style ][ h2 [class "mancala-feedback", verticalStyle] [text (toString(MancalaAPI.getElementList size model.board.list)) ]]]
               ]
         , getFeedbackView model.feedback
-        , getWinnerView model.board
+        , getWinnerView model.board model.difficulty
         , div [ class "row text-center", style [ ("padding", "20px 15px 0") ] ]
               [ img [src "images/replay.png", replayStyle, onClick(Back)] []
               ]
@@ -333,7 +333,7 @@ update msg model =
         Start difficultyForGame ->
             ( {model | status=Playing}, Cmd.none )
             |> (\(n,m) -> ({n | board=MancalaAPI.initBoard}, m))
-            |> (\(n,m) -> ({n | feedback=[MancalaAPI.initFeedback]}, m))
+            |> (\(n,m) -> ({n | feedback=[MancalaAPI.initFeedback difficultyForGame]}, m))
             |> (\(n,m) -> ({n | turn=Player1}, m))
             |> (\(n,m) -> ({n | difficulty=difficultyForGame}, m))
         
